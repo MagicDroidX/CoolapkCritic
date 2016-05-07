@@ -80,7 +80,7 @@ public class Critic extends Thread {
             try {
                 switch (this.step) {
                     case INIT: {
-                        logger.info("正在初始化");
+                        this.logger.info("正在初始化");
 
                         URL url = new URL("http://coolapk.com/account/register");
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -91,17 +91,17 @@ public class Critic extends Thread {
 
                         if (code == HttpURLConnection.HTTP_OK) {
                             Map<String, List<String>> headers = connection.getHeaderFields();
-                            for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<>())) {
+                            for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
                                 if (str.startsWith("SESSID=")) {
                                     this.sessionId = str.substring(0, str.indexOf(";"));
 
-                                    logger.info("已获取 SESSID");
+                                    this.logger.info("已获取 SESSID");
 
-                                    Matcher matcher = patternRequestHash.matcher(getContent(connection.getInputStream()));
+                                    Matcher matcher = this.patternRequestHash.matcher(getContent(connection.getInputStream()));
 
                                     if (matcher.find()) {
-                                        requestHash = matcher.group(2);
-                                        logger.info("已获取 REQUEST_HASH： " + requestHash);
+                                        this.requestHash = matcher.group(2);
+                                        this.logger.info("已获取 REQUEST_HASH： " + this.requestHash);
 
                                         this.step = Step.MAIL_APPLY;
                                     }
@@ -109,13 +109,13 @@ public class Critic extends Thread {
                             }
 
                         } else {
-                            logger.warning("请求失败：" + code);
+                            this.logger.warning("请求失败：" + code);
                         }
                         break;
                     }
 
                     case MAIL_APPLY: {
-                        logger.info("正在打开邮箱申请页面");
+                        this.logger.info("正在打开邮箱申请页面");
 
                         URL url = new URL("https://10minutemail.org/");
                         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -131,7 +131,7 @@ public class Critic extends Thread {
                                 if (str.startsWith("PHPSESSID=")) {
                                     this.phpSessionId = str.substring(0, str.indexOf(";"));
 
-                                    logger.info("已获取 PHP_SESSID");
+                                    this.logger.info("已获取 PHP_SESSID");
 
                                     Matcher matcher = patternMail.matcher(getContent(connection.getInputStream()));
 
@@ -144,13 +144,13 @@ public class Critic extends Thread {
                                 }
                             }
                         } else {
-                            logger.warning("请求失败：" + code);
+                            this.logger.warning("请求失败：" + code);
                         }
                         break;
                     }
 
                     case COOLAPK_REGISTER: {
-                        logger.info("正在注册酷安账号");
+                        this.logger.info("正在注册酷安账号");
 
                         URL url = new URL("http://coolapk.com/do?c=account&m=register&ajaxRequest=1&" + System.currentTimeMillis());
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -177,7 +177,7 @@ public class Critic extends Thread {
 
                         if (code == HttpURLConnection.HTTP_OK) {
                             Map<String, List<String>> headers = connection.getHeaderFields();
-                            for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<>())) {
+                            for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
                                 if (str.startsWith("auth=") && !str.startsWith("auth=deleted")) {
                                     this.auth = str.substring(0, str.indexOf(";"));
                                 }
@@ -188,13 +188,13 @@ public class Critic extends Thread {
                             }
 
                             if (this.uid != null) {
-                                logger.info(String.format("%s 注册成功，等待激活邮件", this.mail));
+                                this.logger.info(String.format("%s 注册成功，等待激活邮件", this.mail));
 
                                 this.step = Step.MAIL_VERIFY;
                             }
 
                         } else {
-                            logger.warning("请求失败：" + code);
+                            this.logger.warning("请求失败：" + code);
                         }
 
                         break;
@@ -216,7 +216,7 @@ public class Critic extends Thread {
 
                             if (matcher.find()) {
                                 String link = "https://10minutemail.org/" + matcher.group(2);
-                                logger.info("已获取邮件地址 " + link);
+                                this.logger.info("已获取邮件地址 " + link);
 
                                 url = new URL(link);
                                 connection = (HttpsURLConnection) url.openConnection();
@@ -232,7 +232,7 @@ public class Critic extends Thread {
 
                                     if (matcher.find()) {
                                         link = matcher.group();
-                                        logger.info("已获取激活地址 " + link);
+                                        this.logger.info("已获取激活地址 " + link);
 
                                         url = new URL(link);
                                         connection = (HttpsURLConnection) url.openConnection();
@@ -243,7 +243,7 @@ public class Critic extends Thread {
                                         code = connection.getResponseCode();
 
                                         if (code == HttpsURLConnection.HTTP_OK) {
-                                            logger.info("激活成功，开始批判一番");
+                                            this.logger.info("激活成功，开始批判一番");
                                             this.step = Step.RATING;
 
                                             break;
@@ -252,10 +252,10 @@ public class Critic extends Thread {
                                 }
                             }
                         } else {
-                            logger.warning("请求失败：" + code);
+                            this.logger.warning("请求失败：" + code);
                         }
 
-                        logger.info("未获取到邮件，等待5秒后刷新");
+                        this.logger.info("未获取到邮件，等待5秒后刷新");
                         break;
                     }
                     case RATING: {
@@ -269,11 +269,11 @@ public class Critic extends Thread {
 
                             if (code == HttpsURLConnection.HTTP_OK) {
                                 Map<String, List<String>> headers = connection.getHeaderFields();
-                                for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<>())) {
+                                for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
                                     if (str.startsWith("SESSID=")) {
                                         this.sessionId = str.substring(0, str.indexOf(";"));
 
-                                        logger.info("已更新 SESSID");
+                                        this.logger.info("已更新 SESSID");
                                     }
                                 }
 
@@ -282,16 +282,16 @@ public class Critic extends Thread {
 
                                 Matcher matcher;
 
-                                matcher = patternRequestHash.matcher(content);
+                                matcher = this.patternRequestHash.matcher(content);
                                 if (matcher.find()) {
                                     requestHash = matcher.group(2);
-                                    logger.info("已获取 REQUEST_HASH_RATING： " + requestHash);
+                                    this.logger.info("已获取 REQUEST_HASH_RATING： " + requestHash);
                                 }
 
-                                matcher = patternTid.matcher(content);
+                                matcher = this.patternTid.matcher(content);
                                 if (matcher.find()) {
                                     tid = matcher.group(2);
-                                    logger.info("已获取 Tid： " + tid);
+                                    this.logger.info("已获取 Tid： " + tid);
                                 }
 
                                 if (requestHash != null && tid != null) {
@@ -315,13 +315,13 @@ public class Critic extends Thread {
                                     code = connection.getResponseCode();
 
                                     if (code == HttpURLConnection.HTTP_OK) {
-                                        logger.info("com.baidu." + name + " 投票成功");
+                                        this.logger.info("com.baidu." + name + " 投票成功");
                                     } else {
-                                        logger.warning("请求失败：" + code);
+                                        this.logger.warning("请求失败：" + code);
                                     }
                                 }
                             } else {
-                                logger.warning("请求失败：" + code);
+                                this.logger.warning("请求失败：" + code);
                             }
                         }
 
@@ -329,9 +329,10 @@ public class Critic extends Thread {
                     }
 
                     case END: {
-                        logger.info("结束");
+                        this.logger.info("结束");
 
-                        instance.remove(this);
+                        this.instance.remove(this);
+                        this.instance.add(new Critic(this.instance, this.logger));
                         return;
                     }
                 }
