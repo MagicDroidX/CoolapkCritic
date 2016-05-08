@@ -197,7 +197,7 @@ public class Critic extends Thread {
 
                     case RATING: {
                         for (String name : Main.list) {
-                            URL url = new URL("http://coolapk.com/apk/com.baidu." + name);
+                            URL url = new URL("http://coolapk.com/apk/" + name);
                             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                             connection.addRequestProperty("User-Agent", Main.USER_AGENT);
                             connection.addRequestProperty("Cookie", String.format("%s; %s; username=%s", this.auth, this.uid, this.username));
@@ -239,7 +239,7 @@ public class Critic extends Thread {
 
                                     connection.addRequestProperty("User-Agent", Main.USER_AGENT);
                                     connection.addRequestProperty("Cookie", String.format("%s; %s; %s; username=%s", this.auth, this.sessionId, this.uid, this.username));
-                                    connection.addRequestProperty("Referer", "http://coolapk.com/apk/com.baidu." + name);
+                                    connection.addRequestProperty("Referer", "http://coolapk.com/apk/" + name);
                                     connection.addRequestProperty("X-Requested-With", "XMLHttpRequest");
                                     connection.addRequestProperty("Origin", "http://coolapk.com");
 
@@ -252,7 +252,7 @@ public class Critic extends Thread {
                                     code = connection.getResponseCode();
 
                                     if (code == HttpURLConnection.HTTP_OK) {
-                                        this.logger.info("com.baidu." + name + " 投票成功");
+                                        this.logger.info(name + " 投票成功");
                                     } else {
                                         this.logger.warning("请求失败：" + code);
                                     }

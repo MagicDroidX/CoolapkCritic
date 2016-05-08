@@ -92,12 +92,12 @@ public class Main {
                     Matcher matcher = pattern.matcher(Util.getContent(connection.getInputStream()));
 
                     while (matcher.find()) {
-                        list.add(matcher.group(2));
-
                         if (list.size() > 10) {
                             stop = true;
                             break;
                         }
+
+                        list.add("com.baidu." + matcher.group(2));
                     }
                 } else {
                     logger.warning("请求错误：" + code);
