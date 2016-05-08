@@ -19,8 +19,6 @@ public class MailApplier extends Thread {
 
     public final List<MailProvider> mails = Collections.synchronizedList(new ArrayList<MailProvider>());
 
-    public long timestamp = 0;
-
     public MailApplier(SSLContext sslContext) {
         this.sslContext = sslContext;
 
@@ -52,22 +50,19 @@ public class MailApplier extends Thread {
     @Override
     public void run() {
         while (true) {
-            if (System.currentTimeMillis() - timestamp >= 15000) {
-                try {
-                    MailProvider mail = new TenMinuteMailProvider(this.sslContext);
+            try {
+                MailProvider mail = new TenMinuteMailProvider(this.sslContext);
 
-                    if (!mail.apply()) {
-                        this.logger.info("邮箱申请失败");
-                    } else {
-                        this.logger.info("已申请邮箱： " + mail.address);
-                        this.mails.add(mail);
-                    }
-
-                    this.timestamp = System.currentTimeMillis();
-                } catch (Throwable e) {
-                    this.logger.log(Level.SEVERE, null, e);
+                while (!mail.apply()) {
                 }
+
+                this.logger.info("已申请邮箱： " + mail.address);
+                this.mails.add(mail);
+
+            } catch (Throwable e) {
+                this.logger.log(Level.SEVERE, null, e);
             }
+
 
             for (MailProvider mail : mails) {
                 if (!mail.isValid()) {

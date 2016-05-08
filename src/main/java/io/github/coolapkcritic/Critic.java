@@ -3,6 +3,7 @@ package io.github.coolapkcritic;
 
 import io.github.coolapkcritic.mail.MailApplier;
 import io.github.coolapkcritic.mail.MailProvider;
+import io.github.coolapkcritic.mail.TenMinuteMailProvider;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -116,14 +117,16 @@ public class Critic extends Thread {
                     }
 
                     case MAIL_APPLY: {
-                        MailProvider mail = this.applier.getNext();
+                        MailProvider mail = new TenMinuteMailProvider(this.sslContext);
 
-                        if (mail != null) {
-                            this.mail = mail;
-
-                            this.logger.info("使用邮箱 " + this.mail.address);
-                            this.step = Step.COOLAPK_REGISTER;
+                        while (!mail.apply()) {
                         }
+
+                        this.mail = mail;
+                        this.logger.info("使用邮箱 " + this.mail.address);
+
+                        this.step = Step.COOLAPK_REGISTER;
+
                         break;
                     }
 
@@ -180,13 +183,12 @@ public class Critic extends Thread {
                     }
 
                     case MAIL_VERIFY: {
-                        sleep(5000);
-                        if (!this.mail.verify()) {
-                            this.logger.info("未获取到邮件，等待5秒后刷新");
-                        } else {
-                            this.logger.info(String.format("%s 激活成功，开始批判一番", this.mail.address));
-                            this.step = Step.RATING;
+                        while (!this.mail.verify()) {
                         }
+
+                        this.logger.info(String.format("%s 激活成功，开始批判一番", this.mail.address));
+                        this.step = Step.RATING;
+
                         break;
                     }
 

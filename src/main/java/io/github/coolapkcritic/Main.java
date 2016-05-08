@@ -24,6 +24,8 @@ public class Main {
 
     public List<Critic> critics = new ArrayList<Critic>();
 
+    public static final int THREAD_COUNT = 10;
+
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.94 Safari/537.36";
 
     public static List<String> list;
@@ -71,7 +73,7 @@ public class Main {
             }}, null);
 
             MailApplier applier = new MailApplier(sslContext);
-            applier.start();
+            //applier.start();
 
             logger.info("正在获取需要批判的软件列表");
 
@@ -100,7 +102,7 @@ public class Main {
 
             Main.list = list;
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < THREAD_COUNT; i++) {
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {

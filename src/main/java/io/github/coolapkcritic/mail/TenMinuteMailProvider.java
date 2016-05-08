@@ -19,6 +19,9 @@ import java.util.regex.Pattern;
  */
 public class TenMinuteMailProvider extends MailProvider {
 
+    public static volatile long timestamp;
+    public static volatile boolean processing;
+
     public String sessionId;
 
     public static Pattern patternMail = Pattern.compile("(<input type=\"text\" id=\"fe_text\" class=\"mailtext\" value=\")(.*)(\" />)");
@@ -31,6 +34,10 @@ public class TenMinuteMailProvider extends MailProvider {
 
     @Override
     public boolean apply() throws IOException {
+        while ((System.currentTimeMillis() - TenMinuteMailProvider.timestamp) <= 2000 || TenMinuteMailProvider.processing) {
+        }
+        TenMinuteMailProvider.processing = true;
+
         URL url = new URL("https://10minutemail.org/");
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
 
@@ -38,6 +45,9 @@ public class TenMinuteMailProvider extends MailProvider {
         connection.setSSLSocketFactory(this.sslContext.getSocketFactory());
 
         int code = connection.getResponseCode();
+
+        TenMinuteMailProvider.processing = false;
+        TenMinuteMailProvider.timestamp = System.currentTimeMillis();
 
         if (code == HttpsURLConnection.HTTP_OK) {
 
@@ -61,6 +71,10 @@ public class TenMinuteMailProvider extends MailProvider {
 
     @Override
     public boolean verify() throws IOException {
+        while ((System.currentTimeMillis() - TenMinuteMailProvider.timestamp) <= 2000 || TenMinuteMailProvider.processing) {
+        }
+        TenMinuteMailProvider.processing = true;
+
         URL url = new URL("https://10minutemail.org/mailbox.ajax.php?_=" + System.currentTimeMillis());
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
 
@@ -69,6 +83,9 @@ public class TenMinuteMailProvider extends MailProvider {
         connection.setSSLSocketFactory(this.sslContext.getSocketFactory());
 
         int code = connection.getResponseCode();
+
+        TenMinuteMailProvider.processing = false;
+        TenMinuteMailProvider.timestamp = System.currentTimeMillis();
 
         if (code == HttpsURLConnection.HTTP_OK) {
             Matcher matcher = getPatternVerify().matcher(Util.getContent(connection.getInputStream()));
