@@ -1,19 +1,11 @@
 package io.github.coolapkcritic.mail;
 
-import io.github.coolapkcritic.Critic;
-import io.github.coolapkcritic.Main;
-
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * author: MagicDroidX
@@ -25,9 +17,7 @@ public class MailApplier extends Thread {
 
     public SSLContext sslContext;
 
-    public final List<MailInfo> mails = Collections.synchronizedList(new ArrayList<MailInfo>());
-
-    public static Pattern patternMail = Pattern.compile("(<input type=\"text\" id=\"fe_text\" class=\"mailtext\" value=\")(.*)(\" />)");
+    public final List<MailProvider> mails = Collections.synchronizedList(new ArrayList<MailProvider>());
 
     public long timestamp = 0;
 
@@ -48,10 +38,10 @@ public class MailApplier extends Thread {
         this.logger.addHandler(handler);
     }
 
-    public synchronized MailInfo getNext() {
+    public synchronized MailProvider getNext() {
         synchronized (this.mails) {
             if (!this.mails.isEmpty()) {
-                MailInfo info = this.mails.get(0);
+                MailProvider info = this.mails.get(0);
                 this.mails.remove(0);
                 return info;
             }
@@ -62,54 +52,26 @@ public class MailApplier extends Thread {
     @Override
     public void run() {
         while (true) {
-            if (System.currentTimeMillis() - timestamp >= 10000) {
+            if (System.currentTimeMillis() - timestamp >= 15000) {
                 try {
-                    URL url = new URL("https://10minutemail.org/");
-                    HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+                    MailProvider mail = new TenMinuteMailProvider(this.sslContext);
 
-                    connection.addRequestProperty("User-Agent", Main.USER_AGENT);
-                    connection.setSSLSocketFactory(this.sslContext.getSocketFactory());
-
-                    int code = connection.getResponseCode();
-                    boolean result = false;
-
-                    if (code == HttpsURLConnection.HTTP_OK) {
-                        MailInfo mail = new MailInfo();
-
-                        Map<String, List<String>> headers = connection.getHeaderFields();
-                        for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
-                            if (str.startsWith("PHPSESSID=")) {
-                                mail.sessionId = str.substring(0, str.indexOf(";"));
-
-                                Matcher matcher = patternMail.matcher(Critic.getContent(connection.getInputStream()));
-
-                                if (matcher.find()) {
-                                    mail.name = matcher.group(2);
-                                    this.logger.info("已申请邮箱： " + mail.name);
-                                    result = true;
-                                    mail.time = System.currentTimeMillis();
-                                    this.mails.add(mail);
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        this.logger.warning("请求失败：" + code);
-                    }
-
-                    if (!result) {
+                    if (!mail.apply()) {
                         this.logger.info("邮箱申请失败");
+                    } else {
+                        this.logger.info("已申请邮箱： " + mail.address);
+                        this.mails.add(mail);
                     }
 
-                    timestamp = System.currentTimeMillis();
+                    this.timestamp = System.currentTimeMillis();
                 } catch (Throwable e) {
                     this.logger.log(Level.SEVERE, null, e);
                 }
             }
 
-            for (MailInfo info : mails) {
-                if (System.currentTimeMillis() - info.time >= 10 * 60 * 1000) {
-                    mails.remove(info);
+            for (MailProvider mail : mails) {
+                if (!mail.isValid()) {
+                    this.mails.remove(mail);
                 }
             }
 

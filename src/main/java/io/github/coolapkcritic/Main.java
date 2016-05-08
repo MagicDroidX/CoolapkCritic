@@ -86,7 +86,7 @@ public class Main {
 
                 if (code == HttpURLConnection.HTTP_OK) {
                     Pattern pattern = Pattern.compile("(data-touch-url=\"/apk/com.baidu.)(.*)(\">)");
-                    Matcher matcher = pattern.matcher(Critic.getContent(connection.getInputStream()));
+                    Matcher matcher = pattern.matcher(Util.getContent(connection.getInputStream()));
 
                     while (matcher.find()) {
                         list.add(matcher.group(2));
@@ -100,7 +100,7 @@ public class Main {
 
             Main.list = list;
 
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 5; i++) {
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
@@ -124,7 +124,7 @@ public class Main {
     }
 
     public int nextId() {
-        return this.id++;
+        return ++this.id;
     }
 
     public static void main(String[] args) {
