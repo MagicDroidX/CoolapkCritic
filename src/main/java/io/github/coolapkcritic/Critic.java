@@ -12,12 +12,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
  */
 public class Critic extends Thread {
 
+    public int id;
     public Step step = Step.INIT;
 
     public String sessionId;
@@ -40,7 +41,7 @@ public class Critic extends Thread {
     public Pattern patternMailVerify = Pattern.compile("(send.coolapk.com</td><td><a href=\")(.*)(\">酷安)");
     public Pattern patternRequestHash = Pattern.compile("(<input type=\"hidden\" name=\"requestHash\" value=\")(.*)(\"/>)");
     public Pattern patternTid = Pattern.compile("(<input type=\"hidden\" name=\"tid\" value=\")(.*)(\"/>)");
-    public Pattern patternLink = Pattern.compile("(https://account.coolapk.com/auth/validate)(.*)(from=email)");
+    public Pattern patternLink = Pattern.compile("(<a href=\"https://account.coolapk.com/auth/validate)(.*)(from=email\")");
 
 
     public SSLContext sslContext;
@@ -52,9 +53,27 @@ public class Critic extends Thread {
     public String auth;
     public String uid;
 
-    public Critic(Main instance, Logger logger) {
+    public Critic(Main instance) {
         this.instance = instance;
-        this.logger = logger;
+        this.id = instance.nextId();
+
+        this.logger = Logger.getLogger("Critic#" + id);
+        this.logger.setUseParentHandlers(false);
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setFormatter(new Formatter() {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+
+            @Override
+            public String format(LogRecord record) {
+                return String.format("[%s %s #%d]: %s", dateFormat.format(record.getMillis()), record.getLevel(), id, record.getMessage()) + "\n";
+            }
+        });
+
+        if (Main.debug) {
+            this.logger.setLevel(Level.ALL);
+        }
+
+        this.logger.addHandler(handler);
 
         try {
             this.sslContext = SSLContext.getInstance("TLS");
@@ -231,7 +250,7 @@ public class Critic extends Thread {
                                     matcher = patternLink.matcher(getContent(connection.getInputStream()));
 
                                     if (matcher.find()) {
-                                        link = matcher.group();
+                                        link = "https://account.coolapk.com/auth/validate" + matcher.group(2) + "from=email";
                                         this.logger.info("已获取激活地址 " + link);
 
                                         url = new URL(link);
@@ -332,7 +351,7 @@ public class Critic extends Thread {
                         this.logger.info("结束");
 
                         this.instance.remove(this);
-                        this.instance.add(new Critic(this.instance, this.logger));
+                        this.instance.add(new Critic(this.instance));
                         return;
                     }
                 }

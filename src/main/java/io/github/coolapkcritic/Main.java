@@ -21,6 +21,10 @@ public class Main {
 
     public static List<String> list;
 
+    public static boolean debug;
+
+    public int id = 0;
+
     public Main() {
         Logger logger = Logger.getLogger("Critic");
         logger.setUseParentHandlers(false);
@@ -33,7 +37,11 @@ public class Main {
                 return String.format("[%s %s]: %s", dateFormat.format(record.getMillis()), record.getLevel(), record.getMessage() + "\n");
             }
         });
-        logger.setLevel(Level.ALL);
+
+        if (debug) {
+            logger.setLevel(Level.ALL);
+        }
+
         logger.addHandler(handler);
 
         try {
@@ -60,7 +68,7 @@ public class Main {
                 }
             }
 
-            logger.info("哇，一共有 " + list.size() + "个毒瘤软件");
+            logger.info("共有 " + list.size() + " 个百度系列毒瘤软件");
 
             Main.list = list;
 
@@ -73,7 +81,14 @@ public class Main {
         System.setProperty("https.proxyHost", "localhost");
         System.setProperty("https.proxyPort", "8888");
 
-        this.add(new Critic(this, logger));
+        for (int i = 0; i < 20; i++) {
+            this.add(new Critic(this));
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                logger.log(Level.SEVERE, null, e);
+            }
+        }
     }
 
     public void add(Critic critic) {
@@ -85,7 +100,19 @@ public class Main {
         critics.remove(critic);
     }
 
+    public int nextId() {
+        int id = this.id;
+        this.id++;
+        return id;
+    }
+
     public static void main(String[] args) {
         new Main();
+
+        for (String arg : args) {
+            if (arg.equals("d") || arg.equals("debug")) {
+                debug = true;
+            }
+        }
     }
 }
