@@ -81,10 +81,10 @@ public class Main {
         System.setProperty("https.proxyHost", "localhost");
         System.setProperty("https.proxyPort", "8888");
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 5; i++) {
             this.add(new Critic(this));
             try {
-                Thread.sleep(2000);
+                Thread.sleep(5000);
             } catch (InterruptedException e) {
                 logger.log(Level.SEVERE, null, e);
             }
@@ -101,9 +101,7 @@ public class Main {
     }
 
     public int nextId() {
-        int id = this.id;
-        this.id++;
-        return id;
+        return this.id++;
     }
 
     public static void main(String[] args) {

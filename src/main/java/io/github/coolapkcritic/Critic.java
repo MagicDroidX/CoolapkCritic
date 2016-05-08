@@ -114,15 +114,12 @@ public class Critic extends Thread {
                                 if (str.startsWith("SESSID=")) {
                                     this.sessionId = str.substring(0, str.indexOf(";"));
 
-                                    this.logger.info("已获取 SESSID");
-
                                     Matcher matcher = this.patternRequestHash.matcher(getContent(connection.getInputStream()));
 
                                     if (matcher.find()) {
                                         this.requestHash = matcher.group(2);
-                                        this.logger.info("已获取 REQUEST_HASH： " + this.requestHash);
-
                                         this.step = Step.MAIL_APPLY;
+                                        return;
                                     }
                                 }
                             }
@@ -130,12 +127,12 @@ public class Critic extends Thread {
                         } else {
                             this.logger.warning("请求失败：" + code);
                         }
+
+                        this.logger.info("初始化失败");
                         break;
                     }
 
                     case MAIL_APPLY: {
-                        this.logger.info("正在打开邮箱申请页面");
-
                         URL url = new URL("https://10minutemail.org/");
                         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
 
@@ -150,27 +147,26 @@ public class Critic extends Thread {
                                 if (str.startsWith("PHPSESSID=")) {
                                     this.phpSessionId = str.substring(0, str.indexOf(";"));
 
-                                    this.logger.info("已获取 PHP_SESSID");
-
-                                    Matcher matcher = patternMail.matcher(getContent(connection.getInputStream()));
+                                    Matcher matcher = this.patternMail.matcher(getContent(connection.getInputStream()));
 
                                     if (matcher.find()) {
-                                        mail = matcher.group(2);
-                                        logger.info("申请到十分钟邮箱： " + mail);
+                                        this.mail = matcher.group(2);
+                                        this.logger.info("获取邮箱： " + this.mail);
 
                                         this.step = Step.COOLAPK_REGISTER;
+                                        return;
                                     }
                                 }
                             }
                         } else {
                             this.logger.warning("请求失败：" + code);
                         }
+
+                        this.logger.info("邮箱获取失败");
                         break;
                     }
 
                     case COOLAPK_REGISTER: {
-                        this.logger.info("正在注册酷安账号");
-
                         URL url = new URL("http://coolapk.com/do?c=account&m=register&ajaxRequest=1&" + System.currentTimeMillis());
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                         connection.setRequestMethod("POST");
@@ -210,11 +206,14 @@ public class Critic extends Thread {
                                 this.logger.info(String.format("%s 注册成功，等待激活邮件", this.mail));
 
                                 this.step = Step.MAIL_VERIFY;
+                                return;
                             }
 
                         } else {
                             this.logger.warning("请求失败：" + code);
                         }
+
+                        this.logger.info("注册失败");
 
                         break;
                     }
@@ -235,7 +234,6 @@ public class Critic extends Thread {
 
                             if (matcher.find()) {
                                 String link = "https://10minutemail.org/" + matcher.group(2);
-                                this.logger.info("已获取邮件地址 " + link);
 
                                 url = new URL(link);
                                 connection = (HttpsURLConnection) url.openConnection();
@@ -251,7 +249,6 @@ public class Critic extends Thread {
 
                                     if (matcher.find()) {
                                         link = "https://account.coolapk.com/auth/validate" + matcher.group(2) + "from=email";
-                                        this.logger.info("已获取激活地址 " + link);
 
                                         url = new URL(link);
                                         connection = (HttpsURLConnection) url.openConnection();
@@ -262,10 +259,10 @@ public class Critic extends Thread {
                                         code = connection.getResponseCode();
 
                                         if (code == HttpsURLConnection.HTTP_OK) {
-                                            this.logger.info("激活成功，开始批判一番");
+                                            this.logger.info(String.format("%s 激活成功，开始批判一番", this.mail));
                                             this.step = Step.RATING;
 
-                                            break;
+                                            return;
                                         }
                                     }
                                 }
@@ -291,8 +288,6 @@ public class Critic extends Thread {
                                 for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
                                     if (str.startsWith("SESSID=")) {
                                         this.sessionId = str.substring(0, str.indexOf(";"));
-
-                                        this.logger.info("已更新 SESSID");
                                     }
                                 }
 
@@ -304,13 +299,11 @@ public class Critic extends Thread {
                                 matcher = this.patternRequestHash.matcher(content);
                                 if (matcher.find()) {
                                     requestHash = matcher.group(2);
-                                    this.logger.info("已获取 REQUEST_HASH_RATING： " + requestHash);
                                 }
 
                                 matcher = this.patternTid.matcher(content);
                                 if (matcher.find()) {
                                     tid = matcher.group(2);
-                                    this.logger.info("已获取 Tid： " + tid);
                                 }
 
                                 if (requestHash != null && tid != null) {
