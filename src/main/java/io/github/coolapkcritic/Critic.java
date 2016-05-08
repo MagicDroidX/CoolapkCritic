@@ -1,9 +1,9 @@
 package io.github.coolapkcritic;
 
 
+import io.github.coolapkcritic.mail.ChacuoMailProvider;
 import io.github.coolapkcritic.mail.MailApplier;
 import io.github.coolapkcritic.mail.MailProvider;
-import io.github.coolapkcritic.mail.TenMinuteMailProvider;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -79,7 +79,8 @@ public class Critic extends Thread {
             try {
                 switch (this.step) {
                     case MAIL_APPLY: {
-                        MailProvider mail = new TenMinuteMailProvider(this.sslContext);
+                        //MailProvider mail = new TenMinuteMailProvider(this.sslContext);
+                        MailProvider mail = new ChacuoMailProvider(this.sslContext);
 
                         while (!mail.apply()) {
                         }
@@ -103,7 +104,11 @@ public class Critic extends Thread {
 
                         if (code == HttpURLConnection.HTTP_OK) {
                             Map<String, List<String>> headers = connection.getHeaderFields();
-                            for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
+                            List<String> list = new ArrayList<String>();
+                            if (headers.containsKey("Set-Cookie")) {
+                                list = headers.get("Set-Cookie");
+                            }
+                            for (String str : list) {
                                 if (str.startsWith("SESSID=")) {
                                     this.sessionId = str.substring(0, str.indexOf(";"));
 
@@ -151,7 +156,11 @@ public class Critic extends Thread {
 
                         if (code == HttpURLConnection.HTTP_OK) {
                             Map<String, List<String>> headers = connection.getHeaderFields();
-                            for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
+                            List<String> list = new ArrayList<String>();
+                            if (headers.containsKey("Set-Cookie")) {
+                                list = headers.get("Set-Cookie");
+                            }
+                            for (String str : list) {
                                 if (str.startsWith("auth=") && !str.startsWith("auth=deleted")) {
                                     this.auth = str.substring(0, str.indexOf(";"));
                                 }
@@ -197,7 +206,11 @@ public class Critic extends Thread {
 
                             if (code == HttpsURLConnection.HTTP_OK) {
                                 Map<String, List<String>> headers = connection.getHeaderFields();
-                                for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
+                                List<String> list = new ArrayList<String>();
+                                if (headers.containsKey("Set-Cookie")) {
+                                    list = headers.get("Set-Cookie");
+                                }
+                                for (String str : list) {
                                     if (str.startsWith("SESSID=")) {
                                         this.sessionId = str.substring(0, str.indexOf(";"));
                                     }

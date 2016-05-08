@@ -24,7 +24,7 @@ public class Main {
 
     public List<Critic> critics = new ArrayList<Critic>();
 
-    public static final int THREAD_COUNT = 10;
+    public static final int THREAD_COUNT = 20;
 
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.94 Safari/537.36";
 
@@ -78,8 +78,9 @@ public class Main {
             logger.info("正在获取需要批判的软件列表");
 
             List<String> list = new ArrayList<String>();
+            boolean stop = false;
 
-            for (int i = 1; i <= 3; i++) {
+            for (int i = 1; i <= 3 && !stop; i++) {
                 URL url = new URL("http://coolapk.com/apk/search?q=%E7%99%BE%E5%BA%A6&p=" + i);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.addRequestProperty("User-Agent", USER_AGENT);
@@ -92,6 +93,11 @@ public class Main {
 
                     while (matcher.find()) {
                         list.add(matcher.group(2));
+
+                        if (list.size() > 10) {
+                            stop = true;
+                            break;
+                        }
                     }
                 } else {
                     logger.warning("请求错误：" + code);

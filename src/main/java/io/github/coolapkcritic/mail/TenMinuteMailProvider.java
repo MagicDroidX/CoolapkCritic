@@ -52,11 +52,15 @@ public class TenMinuteMailProvider extends MailProvider {
         if (code == HttpsURLConnection.HTTP_OK) {
 
             Map<String, List<String>> headers = connection.getHeaderFields();
-            for (String str : headers.getOrDefault("Set-Cookie", new ArrayList<String>())) {
+            List<String> list = new ArrayList<String>();
+            if (headers.containsKey("Set-Cookie")) {
+                list = headers.get("Set-Cookie");
+            }
+            for (String str : list) {
                 if (str.startsWith("PHPSESSID=")) {
                     this.sessionId = str.substring(0, str.indexOf(";"));
 
-                    Matcher matcher = getPatternMail().matcher(Util.getContent(connection.getInputStream()));
+                    Matcher matcher = patternMail.matcher(Util.getContent(connection.getInputStream()));
 
                     if (matcher.find()) {
                         this.address = matcher.group(2);
@@ -88,7 +92,7 @@ public class TenMinuteMailProvider extends MailProvider {
         TenMinuteMailProvider.timestamp = System.currentTimeMillis();
 
         if (code == HttpsURLConnection.HTTP_OK) {
-            Matcher matcher = getPatternVerify().matcher(Util.getContent(connection.getInputStream()));
+            Matcher matcher = patternVerify.matcher(Util.getContent(connection.getInputStream()));
 
             if (matcher.find()) {
                 String link = "https://10minutemail.org/" + matcher.group(2);
@@ -103,7 +107,7 @@ public class TenMinuteMailProvider extends MailProvider {
                 code = connection.getResponseCode();
 
                 if (code == HttpsURLConnection.HTTP_OK) {
-                    matcher = getPatternLink().matcher(Util.getContent(connection.getInputStream()));
+                    matcher = patternLink.matcher(Util.getContent(connection.getInputStream()));
 
                     if (matcher.find()) {
                         link = "https://account.coolapk.com/auth/validate" + matcher.group(2) + "from=email";
@@ -111,7 +115,6 @@ public class TenMinuteMailProvider extends MailProvider {
                         url = new URL(link);
                         connection = (HttpsURLConnection) url.openConnection();
                         connection.addRequestProperty("User-Agent", Main.USER_AGENT);
-                        connection.addRequestProperty("Cookie", this.sessionId);
                         connection.setSSLSocketFactory(this.sslContext.getSocketFactory());
 
                         code = connection.getResponseCode();
@@ -129,20 +132,5 @@ public class TenMinuteMailProvider extends MailProvider {
     @Override
     public boolean isValid() {
         return this.address != null && System.currentTimeMillis() - this.time <= 7 * 60 * 1000; //去掉收邮件可能需要的3分钟，保证可用性
-    }
-
-    @Override
-    public Pattern getPatternMail() {
-        return patternMail;
-    }
-
-    @Override
-    public Pattern getPatternVerify() {
-        return patternVerify;
-    }
-
-    @Override
-    public Pattern getPatternLink() {
-        return patternLink;
     }
 }

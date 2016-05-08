@@ -2,7 +2,6 @@ package io.github.coolapkcritic.mail;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 /**
  * author: MagicDroidX
@@ -24,12 +23,6 @@ public abstract class MailProvider implements Comparable<MailProvider> {
     public abstract boolean verify() throws IOException;
 
     public abstract boolean isValid();
-
-    public abstract Pattern getPatternMail();
-
-    public abstract Pattern getPatternVerify();
-
-    public abstract Pattern getPatternLink();
 
     public int compareTo(MailProvider o) {
         return Long.compare(o.time, this.time);
