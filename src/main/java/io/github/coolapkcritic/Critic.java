@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 public class Critic extends Thread {
 
     public int id;
-    public Step step = Step.INIT;
+    public Step step = Step.MAIL_APPLY;
 
     public String sessionId;
 
@@ -78,9 +78,21 @@ public class Critic extends Thread {
         while (true) {
             try {
                 switch (this.step) {
-                    case INIT: {
-                        this.logger.info("正在初始化");
+                    case MAIL_APPLY: {
+                        MailProvider mail = new TenMinuteMailProvider(this.sslContext);
 
+                        while (!mail.apply()) {
+                        }
+
+                        this.mail = mail;
+                        this.logger.info("使用邮箱 " + this.mail.address);
+
+                        this.step = Step.COOLAPK_REGISTER;
+
+                        break;
+                    }
+
+                    case COOLAPK_REGISTER: {
                         URL url = new URL("http://coolapk.com/account/register");
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
@@ -105,34 +117,17 @@ public class Critic extends Thread {
                                     }
                                 }
                             }
-
                         } else {
                             this.logger.warning("请求失败：" + code);
                         }
 
                         if (!result) {
                             this.logger.info("初始化失败");
-                        }
-                        break;
-                    }
-
-                    case MAIL_APPLY: {
-                        MailProvider mail = new TenMinuteMailProvider(this.sslContext);
-
-                        while (!mail.apply()) {
+                            break;
                         }
 
-                        this.mail = mail;
-                        this.logger.info("使用邮箱 " + this.mail.address);
-
-                        this.step = Step.COOLAPK_REGISTER;
-
-                        break;
-                    }
-
-                    case COOLAPK_REGISTER: {
-                        URL url = new URL("http://coolapk.com/do?c=account&m=register&ajaxRequest=1&" + System.currentTimeMillis());
-                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        url = new URL("http://coolapk.com/do?c=account&m=register&ajaxRequest=1&" + System.currentTimeMillis());
+                        connection = (HttpURLConnection) url.openConnection();
                         connection.setRequestMethod("POST");
 
                         connection.addRequestProperty("User-Agent", Main.USER_AGENT);
@@ -152,7 +147,7 @@ public class Critic extends Thread {
                                 ).getBytes());
                         stream.flush();
 
-                        int code = connection.getResponseCode();
+                        code = connection.getResponseCode();
 
                         if (code == HttpURLConnection.HTTP_OK) {
                             Map<String, List<String>> headers = connection.getHeaderFields();
@@ -178,7 +173,6 @@ public class Critic extends Thread {
                         }
 
                         this.logger.info("注册失败");
-
                         break;
                     }
 
