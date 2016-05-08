@@ -1,7 +1,14 @@
 package io.github.coolapkcritic;
 
+import io.github.coolapkcritic.mail.MailApplier;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +51,28 @@ public class Main {
 
         logger.addHandler(handler);
 
+        System.setProperty("http.proxyHost", "localhost");
+        System.setProperty("http.proxyPort", "8888");
+        System.setProperty("https.proxyHost", "localhost");
+        System.setProperty("https.proxyPort", "8888");
+
         try {
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, new TrustManager[]{new X509TrustManager() {
+                public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                }
+
+                public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                }
+
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+            }}, null);
+
+            MailApplier applier = new MailApplier(sslContext);
+            applier.start();
+
             logger.info("正在获取需要批判的软件列表");
 
             List<String> list = new ArrayList<String>();
@@ -72,22 +100,17 @@ public class Main {
 
             Main.list = list;
 
-        } catch (Throwable e) {
-            logger.log(Level.SEVERE, null, e);
-        }
-
-        System.setProperty("http.proxyHost", "localhost");
-        System.setProperty("http.proxyPort", "8888");
-        System.setProperty("https.proxyHost", "localhost");
-        System.setProperty("https.proxyPort", "8888");
-
-        for (int i = 0; i < 5; i++) {
-            this.add(new Critic(this));
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                logger.log(Level.SEVERE, null, e);
+            for (int i = 0; i < 20; i++) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    logger.log(Level.SEVERE, null, e);
+                }
+                this.add(new Critic(this, applier, sslContext));
             }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
